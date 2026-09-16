@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; img-src 'self' data: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com; font-src https://fonts.gstatic.com https://cdnjs.cloudflare.com; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://www.gstatic.com; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com https://*.firebaseapp.com https://firebasestorage.googleapis.com; upgrade-insecure-requests">
+<meta http-equiv="Referrer-Policy" content="strict-origin-when-cross-origin">
+<meta http-equiv="Permissions-Policy" content="camera=(), microphone=(), geolocation=()">
+<title>Admin · AI Travel Planner</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+<style>
+:root{
+  --bg:#0f1720; --panel:#16212c; --panel-2:#1c2a37; --border:#223140;
+  --text:#e6eef0; --muted:#8fa2ac; --accent:#00bfa5; --accent-dark:#00695c;
+  --amber:#f5b942; --danger:#e2574c; --radius:12px;
+}
+body{background:linear-gradient(135deg,#10252b,#182331 55%,#27203a);}
+.sidebar{background:linear-gradient(180deg,#17333a,#202338); padding:16px 12px;}
+.sidebar .brand{border-bottom-color:#36515a; padding-bottom:16px;}
+.sidebar .brand i{color:#ff9fba;}
+.nav-btn{border-radius:14px; padding:10px 12px;}
+.nav-btn:hover{background:#29404b; transform:translateX(3px);}
+.nav-btn.active{background:linear-gradient(90deg,rgba(255,159,186,.2),rgba(124,131,253,.18)); color:#ffb3c7;}
+main{padding:22px 26px;}
+.topbar h2{font-size:1.25rem; color:#ffd6e1;}
+.panel,.stat-card{border-radius:18px; border-color:#304552; box-shadow:0 12px 28px rgba(0,0,0,.12);}
+.stat-card .num{color:#ff9fba;}
+.btn-sm{border-radius:12px; padding:7px 11px;}
+.btn-sm:hover{transform:translateY(-2px);}
+.modal-box{width:min(1100px,94vw); height:min(90vh,820px); padding:14px; border-radius:20px; border-color:#ff9fba;}
+.modal-box h3{display:inline-block; margin:4px 0 10px 6px; color:#ffd6e1;}
+#planPreviewFrame{width:100%; height:calc(100% - 42px); border:2px solid #b2dfdb; border-radius:15px; background:#fff;}
+*{box-sizing:border-box;}
+body{margin:0; font-family:'Inter',sans-serif; background:var(--bg); color:var(--text); min-height:100vh;}
+a{color:var(--accent);}
+
+/* ---------- Login gate ---------- */
+#admin-login{
+  min-height:100vh; display:flex; align-items:center; justify-content:center;
+  background: radial-gradient(circle at top left, #16323a, #0f1720 60%);
+}
+.login-card{
+  width:340px; background:var(--panel); border:1px solid var(--border); border-radius:var(--radius);
+  padding:32px 28px; text-align:center;
+}
+.login-card i.fa-shield-halved{font-size:2rem; color:var(--accent); margin-bottom:10px;}
+.login-card h1{font-size:1.3rem; margin:6px 0 4px 0;}
+.login-card p{color:var(--muted); font-size:0.85rem; margin-bottom:20px;}
+.login-card input{
+  width:100%; padding:11px 12px; margin-bottom:12px; border-radius:8px;
+  border:1px solid var(--border); background:var(--panel-2); color:var(--text); font-size:0.95rem;
+}
+.login-card button{
+  width:100%; padding:11px; border:none; border-radius:8px; background:var(--accent);
+  color:#03211d; font-weight:700; cursor:pointer; font-size:0.95rem;
+}
+.login-card button:hover{background:#00d6b8;}
+#login-error{color:var(--danger); font-size:0.82rem; margin-top:10px; min-height:1em;}
+
+/* ---------- App shell ---------- */
+#admin-app{display:none; min-height:100vh; grid-template-columns:220px 1fr;}
+#admin-app.active{display:grid;}
+.sidebar{
+  background:var(--panel); border-right:1px solid var(--border); padding:22px 14px; display:flex; flex-direction:column;
+}
+.sidebar .brand{display:flex; align-items:center; gap:10px; padding:0 8px 22px 8px; border-bottom:1px solid var(--border); margin-bottom:14px;}
+.sidebar .brand i{color:var(--accent); font-size:1.3rem;}
+.sidebar .brand span{font-weight:700; font-size:0.95rem;}
+.nav-btn{
+  display:flex; align-items:center; gap:10px; width:100%; text-align:left; padding:11px 12px; margin-bottom:4px;
+  border:none; background:transparent; color:var(--muted); border-radius:8px; cursor:pointer; font-size:0.9rem; font-weight:500;
+}
+.nav-btn i{width:18px;}
+.nav-btn:hover{background:var(--panel-2); color:var(--text);}
+.nav-btn.active{background:rgba(0,191,165,0.12); color:var(--accent);}
+.sidebar-footer{margin-top:auto; padding-top:14px; border-top:1px solid var(--border);}
+#logoutBtn{
+  width:100%; padding:10px; border-radius:8px; border:1px solid var(--border); background:transparent;
+  color:var(--muted); cursor:pointer; font-size:0.85rem;
+}
+#logoutBtn:hover{color:var(--danger); border-color:var(--danger);}
+
+main{padding:28px 34px; overflow-y:auto;}
+.topbar{display:flex; justify-content:space-between; align-items:center; margin-bottom:26px;}
+.topbar h2{margin:0; font-size:1.4rem;}
+.topbar .who{color:var(--muted); font-size:0.85rem;}
+
+.view{display:none;}
+.view.active{display:block;}
+
+.stats-row{display:grid; grid-template-columns:repeat(auto-fit, minmax(180px,1fr)); gap:16px; margin-bottom:28px;}
+.stat-card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px 20px;}
+.stat-card .num{font-size:1.9rem; font-weight:800; color:var(--accent);}
+.stat-card .label{color:var(--muted); font-size:0.82rem; margin-top:4px;}
+
+.panel{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:20px; margin-bottom:20px;}
+.panel h3{margin-top:0; font-size:1rem; border-bottom:1px solid var(--border); padding-bottom:12px; margin-bottom:14px;}
+
+table{width:100%; border-collapse:collapse; font-size:0.87rem;}
+th{text-align:left; color:var(--muted); font-weight:600; padding:10px 12px; border-bottom:1px solid var(--border); font-size:0.78rem; text-transform:uppercase; letter-spacing:0.03em;}
+td{padding:12px; border-bottom:1px solid var(--border); vertical-align:top;}
+tr:last-child td{border-bottom:none;}
+.pill{display:inline-block; padding:3px 10px; border-radius:20px; background:rgba(0,191,165,0.14); color:var(--accent); font-size:0.75rem; font-weight:600;}
+.btn-sm{padding:6px 12px; border-radius:7px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); cursor:pointer; font-size:0.78rem;}
+.btn-sm:hover{border-color:var(--accent); color:var(--accent);}
+.btn-sm.danger:hover{border-color:var(--danger); color:var(--danger);}
+#usersSearch{
+  padding:9px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel-2); color:var(--text);
+  width:260px; margin-bottom:14px; font-size:0.85rem;
+}
+
+/* Modal */
+.modal-backdrop{display:none; position:fixed; inset:0; background:rgba(4,10,14,0.7); z-index:1000; align-items:center; justify-content:center;}
+.modal-backdrop.open{display:flex;}
+.modal-box{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); width:min(720px,92vw); max-height:84vh; overflow-y:auto; padding:24px;}
+.modal-box h3{margin-top:0;}
+.modal-close{float:right; cursor:pointer; color:var(--muted); font-size:1.3rem;}
+.modal-box pre{white-space:pre-wrap; word-break:break-word; background:var(--panel-2); padding:14px; border-radius:8px; font-size:0.8rem; color:#c9d6db;}
+
+/* AI Assistant */
+.ai-key-row{display:flex; gap:10px; margin-bottom:16px;}
+.ai-key-row input{flex:1; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel-2); color:var(--text); font-size:0.85rem;}
+.ai-key-row button{padding:10px 16px; border-radius:8px; border:none; background:var(--accent-dark); color:#fff; cursor:pointer; font-weight:600; font-size:0.85rem;}
+#aiChatLog{
+  height:420px; overflow-y:auto; background:var(--panel-2); border:1px solid var(--border); border-radius:var(--radius);
+  padding:16px; margin-bottom:14px; display:flex; flex-direction:column; gap:14px;
+}
+.ai-msg{max-width:85%; padding:12px 14px; border-radius:10px; font-size:0.88rem; line-height:1.55; white-space:pre-wrap; word-break:break-word;}
+.ai-msg.user{align-self:flex-end; background:var(--accent-dark); color:#fff;}
+.ai-msg.assistant{align-self:flex-start; background:#22323f; border:1px solid var(--border);}
+.ai-msg.assistant pre{background:#0f1720; padding:10px; border-radius:8px; overflow-x:auto; font-size:0.8rem;}
+.ai-input-row{display:flex; gap:10px;}
+.ai-input-row textarea{
+  flex:1; resize:vertical; min-height:52px; padding:12px; border-radius:8px; border:1px solid var(--border);
+  background:var(--panel-2); color:var(--text); font-family:inherit; font-size:0.88rem;
+}
+.ai-input-row button{padding:0 22px; border-radius:8px; border:none; background:var(--accent); color:#03211d; font-weight:700; cursor:pointer;}
+.ai-note{color:var(--muted); font-size:0.78rem; margin-top:8px;}
+.empty-state{color:var(--muted); font-size:0.88rem; text-align:center; padding:30px 0;}
+#userPreviewFrame{width:100%; height:calc(100vh - 150px); min-height:700px; border:1px solid var(--border); border-radius:var(--radius); background:#fff;}
+.preview-toolbar{display:flex; gap:12px; align-items:center; margin-bottom:14px;}
+.preview-toolbar select{flex:1; max-width:420px; padding:10px 12px; border-radius:8px; border:1px solid var(--border); background:var(--panel-2); color:var(--text);}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN GATE ============ -->
+<div id="admin-login">
+  <div class="login-card">
+    <i class="fas fa-shield-halved"></i>
+    <h1>Admin Panel</h1>
+    <p>AI Travel Planner — owner access only</p>
+    <input type="email" id="adminEmail" placeholder="Admin email">
+    <input type="password" id="adminPassword" placeholder="Password">
+    <button id="adminLoginBtn">Sign In</button>
+    <div id="login-error"></div>
+  </div>
+</div>
+
+<!-- ============ ADMIN APP ============ -->
+<div id="admin-app">
+  <aside class="sidebar">
+    <div class="brand"><i class="fas fa-route"></i><span>Planner Admin</span></div>
+    <button class="nav-btn active" data-view="dashboard"><i class="fas fa-chart-line"></i> Dashboard</button>
+    <button class="nav-btn" data-view="users"><i class="fas fa-users"></i> Users &amp; Plans</button>
+    <button class="nav-btn" data-view="ai"><i class="fas fa-robot"></i> AI Dev Assistant</button>
+    <div class="sidebar-footer">
+      <button id="logoutBtn"><i class="fas fa-sign-out-alt"></i> Sign out</button>
+    </div>
+  </aside>
+
+  <main>
+    <div class="topbar">
+      <h2 id="viewTitle">Dashboard</h2>
+      <div class="who" id="whoAmI"></div>
+    </div>
+
+    <!-- Dashboard -->
+    <section class="view active" id="view-dashboard">
+      <div class="stats-row">
+        <div class="stat-card"><div class="num" id="statUsers">–</div><div class="label">Unique users</div></div>
+        <div class="stat-card"><div class="num" id="statPlans">–</div><div class="label">Plans generated</div></div>
+        <div class="stat-card"><div class="num" id="statToday">–</div><div class="label">Plans in last 7 days</div></div>
+        <div class="stat-card"><div class="num" id="statActivities">–</div><div class="label">Tools used</div></div>
+      </div>
+      <div class="panel">
+        <h3><i class="fas fa-clock"></i> Most recent plans</h3>
+        <table>
+          <thead><tr><th>User</th><th>Route</th><th>Created</th><th></th></tr></thead>
+          <tbody id="recentPlansBody"><tr><td colspan="4" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Users & Plans -->
+    <section class="view" id="view-users">
+      <input type="text" id="usersSearch" placeholder="Search by name or email…">
+      <div class="panel">
+        <h3><i class="fas fa-users"></i> All users</h3>
+        <table>
+          <thead><tr><th>Name</th><th>Email</th><th>Plans</th><th>Last active</th><th></th></tr></thead>
+          <tbody id="usersBody"><tr><td colspan="5" class="empty-state">Loading…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- AI Dev Assistant -->
+    <section class="view" id="view-ai">
+      <div class="panel">
+        <h3><i class="fas fa-shield-alt"></i> Claude API</h3>
+        <p class="ai-note">The Claude credential is configured server-side and is never sent to this browser.</p>
+      </div>
+      <div class="panel">
+        <h3><i class="fas fa-robot"></i> Ask Claude about your website</h3>
+        <div id="aiChatLog">
+          <div class="empty-state">Ask for a new feature, a bug fix, or a code snippet — e.g. "add a dark-mode toggle to the admin sidebar" or "write the Firestore security rules I need for this admin panel."</div>
+        </div>
+        <div class="ai-input-row">
+          <textarea id="aiPrompt" placeholder="Describe what you want built or fixed…"></textarea>
+          <button id="aiSendBtn"><i class="fas fa-paper-plane"></i></button>
+        </div>
+        <p class="ai-note">This gives you code and explanations to review and paste into your files yourself — it can't edit or redeploy your live site directly.</p>
+      </div>
+    </section>
+  </main>
+</div>
+
+<!-- Plan viewer modal -->
+<div class="modal-backdrop" id="planModal">
+  <div class="modal-box">
+    <span class="modal-close" id="planModalClose">&times;</span>
+    <h3 id="planModalTitle">Plan</h3>
+    <iframe id="planPreviewFrame" title="User plan preview"></iframe>
+  </div>
+</div>
+
+<script type="module">
+const loginBox = document.getElementById('admin-login');
+const adminApp = document.getElementById('admin-app');
+const loginErr = document.getElementById('login-error');
+
+document.getElementById('adminLoginBtn').addEventListener('click', async () => {
+  const email = document.getElementById('adminEmail').value.trim();
+  const password = document.getElementById('adminPassword').value;
+  loginErr.textContent = '';
+
+  try {
+    const response = await fetch('/api/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'same-origin',
+      body: JSON.stringify({ email, password })
+    });
+    if (!response.ok) {
+      const result = await response.json();
+      throw new Error(result.error || 'Sign-in failed.');
+    }
+    await initializeAdmin();
+  } catch (err) {
+    loginErr.textContent = 'Sign-in failed: ' + err.message;
+  }
+});
+
+document.getElementById('logoutBtn').addEventListener('click', async () => {
+  await fetch('/api/logout', { method: 'POST', credentials: 'same-origin' });
+  adminApp.classList.remove('active');
+  loginBox.style.display = 'flex';
+});
+
+async function initializeAdmin() {
+  const response = await fetch('/api/me', { credentials: 'same-origin' });
+  if (!response.ok) {
+    throw new Error('Your local session has expired.');
+  }
+  const { email } = await response.json();
+  if (email) {
+    loginBox.style.display = 'none';
+    adminApp.classList.add('active');
+    document.getElementById('whoAmI').textContent = email;
+    loadAllData();
+  }
+}
+
+initializeAdmin().catch(() => {
+  adminApp.classList.remove('active');
+  loginBox.style.display = 'flex';
+});
+
+// ---------- Navigation ----------
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('view-' + btn.dataset.view).classList.add('active');
+    document.getElementById('viewTitle').textContent = btn.textContent.trim();
+  });
+});
+
+// ---------- Data loading ----------
+let allTrips = [];
+let allUsers = [];
+let allActivities = [];
+
+async function loadAllData() {
+  try {
+    const [tripsResponse, usersResponse, activityResponse] = await Promise.all([
+      fetch('/api/trips', { credentials: 'same-origin' }),
+      fetch('/api/users', { credentials: 'same-origin' }),
+      fetch('/api/activity', { credentials: 'same-origin' })
+    ]);
+    if (!tripsResponse.ok || !usersResponse.ok || !activityResponse.ok) throw new Error('The local server rejected the request.');
+    allTrips = await tripsResponse.json();
+    allUsers = await usersResponse.json();
+    allActivities = await activityResponse.json();
+  } catch (err) {
+    console.error('Failed to load trips:', err);
+    document.getElementById('recentPlansBody').innerHTML =
+      `<tr><td colspan="4" class="empty-state">Couldn't load local data. (${err.message})</td></tr>`;
+    return;
+  }
+  renderDashboard();
+  renderUsers();
+}
+
+function fmtDate(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  return d.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
+}
+
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[character]));
+}
+
+function renderDashboard() {
+  const uniqueUsers = new Set(allUsers.map(u => u.email));
+  allTrips.forEach(t => uniqueUsers.add(t.userEmail || t.userId));
+  document.getElementById('statUsers').textContent = uniqueUsers.size;
+  document.getElementById('statPlans').textContent = allTrips.length;
+
+  const weekAgo = Date.now() - 7 * 24 * 60 * 60 * 1000;
+  const recentCount = allTrips.filter(t => {
+    const d = t.createdAt?.toDate ? t.createdAt.toDate() : (t.createdAt ? new Date(t.createdAt) : null);
+    return d && d.getTime() >= weekAgo;
+  }).length;
+  document.getElementById('statToday').textContent = recentCount;
+  document.getElementById('statActivities').textContent = allActivities.length;
+
+  const body = document.getElementById('recentPlansBody');
+  if (allTrips.length === 0) {
+    body.innerHTML = `<tr><td colspan="4" class="empty-state">No plans generated yet.</td></tr>`;
+    return;
+  }
+  body.innerHTML = allTrips.slice(0, 10).map(t => `
+    <tr>
+      <td>${escapeHtml(t.userName || t.userEmail || 'Unknown')}</td>
+      <td>${escapeHtml(t.meta?.from || '?')} <i class="fas fa-arrow-right" style="font-size:9px;color:var(--muted)"></i> ${escapeHtml(t.meta?.to || t.destination || '?')}</td>
+      <td>${fmtDate(t.createdAt)}</td>
+      <td><button class="btn-sm" onclick="window.viewPlan('${escapeHtml(t.id)}')">View</button></td>
+    </tr>
+  `).join('');
+}
+
+function renderUsers(filterText = '') {
+  const grouped = {};
+  allUsers.forEach(user => {
+    grouped[user.email] = { name: user.name, email: user.email, plans: [], last: user.createdAt ? new Date(user.createdAt) : null };
+  });
+  allTrips.forEach(t => {
+    const key = t.userEmail || t.userId || 'unknown';
+    if (!grouped[key]) grouped[key] = { name: t.userName || 'Unknown', email: t.userEmail || 'unknown', plans: [], last: null };
+    grouped[key].plans.push(t);
+    const d = t.createdAt?.toDate ? t.createdAt.toDate() : (t.createdAt ? new Date(t.createdAt) : null);
+    if (d && (!grouped[key].last || d > grouped[key].last)) grouped[key].last = d;
+  });
+
+  let rows = Object.values(grouped);
+  if (filterText) {
+    const f = filterText.toLowerCase();
+    rows = rows.filter(u => u.name.toLowerCase().includes(f) || u.email.toLowerCase().includes(f));
+  }
+
+  const body = document.getElementById('usersBody');
+  if (rows.length === 0) {
+    body.innerHTML = `<tr><td colspan="5" class="empty-state">No matching users.</td></tr>`;
+    return;
+  }
+  body.innerHTML = rows.map(u => `
+    <tr>
+      <td>${escapeHtml(u.name)}</td>
+      <td>${escapeHtml(u.email)}</td>
+      <td><span class="pill">${u.plans.length}</span></td>
+      <td>${u.last ? u.last.toLocaleDateString() : '—'}</td>
+      <td><button class="btn-sm" onclick="window.viewUserPlans('${escapeHtml(u.email)}')">View plans</button></td>
+    </tr>
+  `).join('');
+}
+
+document.getElementById('usersSearch').addEventListener('input', (e) => renderUsers(e.target.value));
+
+// ---------- Plan modal ----------
+const planModal = document.getElementById('planModal');
+document.getElementById('planModalClose').addEventListener('click', () => planModal.classList.remove('open'));
+planModal.addEventListener('click', (e) => { if (e.target === planModal) planModal.classList.remove('open'); });
+
+window.viewPlan = function (id) {
+  const trip = allTrips.find(t => t.id === id);
+  if (!trip) return;
+  document.getElementById('planModalTitle').textContent =
+    `${trip.tripData?.trip_name || 'Trip'} — ${trip.userName || trip.userEmail || ''}`;
+  document.getElementById('planPreviewFrame').src =
+    `/planner.html?previewUser=${encodeURIComponent(trip.userId)}&previewTrip=${encodeURIComponent(trip.id)}`;
+  planModal.classList.add('open');
+};
+
+window.viewUserPlans = function (email) {
+  const plans = allTrips.filter(t => (t.userEmail || t.userId) === email);
+  if (plans[0]) window.viewPlan(plans[0].id);
+};
+
+// ---------- AI Dev Assistant ----------
+const chatLog = document.getElementById('aiChatLog');
+let chatHistory = [];
+
+function appendMsg(role, text) {
+  const empty = chatLog.querySelector('.empty-state');
+  if (empty) empty.remove();
+  const div = document.createElement('div');
+  div.className = `ai-msg ${role}`;
+  // Minimal, safe formatting: render fenced code blocks, escape everything else as text.
+  const escaped = text.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+  div.innerHTML = escaped.replace(/```[\w-]*\n([\s\S]*?)```/g, (m, code) => `<pre>${code}</pre>`);
+  chatLog.appendChild(div);
+  chatLog.scrollTop = chatLog.scrollHeight;
+}
+
+async function sendToClaude() {
+  const promptBox = document.getElementById('aiPrompt');
+  const prompt = promptBox.value.trim();
+  if (!prompt) return;
+
+  appendMsg('user', prompt);
+  chatHistory.push({ role: 'user', content: prompt });
+  promptBox.value = '';
+
+  const sendBtn = document.getElementById('aiSendBtn');
+  sendBtn.disabled = true;
+  sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+
+  try {
+    const res = await fetch('/api/admin/ai/chat', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      credentials: 'same-origin',
+      body: JSON.stringify({ messages: chatHistory })
+    });
+    if (!res.ok) {
+      const errBody = await res.text();
+      throw new Error(`API error ${res.status}: ${errBody.slice(0, 200)}`);
+    }
+    const data = await res.json();
+    const textBlocks = (data.content || []).filter(b => b.type === 'text').map(b => b.text);
+    const reply = textBlocks.join('\n') || '(No text response.)';
+    appendMsg('assistant', reply);
+    chatHistory.push({ role: 'assistant', content: reply });
+  } catch (err) {
+    appendMsg('assistant', 'Error talking to Claude: ' + err.message);
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+  }
+}
+
+document.getElementById('aiSendBtn').addEventListener('click', sendToClaude);
+document.getElementById('aiPrompt').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendToClaude(); }
+});
+</script>
+
+<!--
+  LOCAL SERVER:
+  Start with "npm install" and then "npm start". Open the URL printed by the
+  server, not this file directly. Set ADMIN_EMAIL and ADMIN_PASSWORD in the
+  environment before sharing the server. The local server protects /api/trips
+  with an HttpOnly session cookie and reads data/trips.json.
+
+  The Claude API key is configured only on the server and is never sent to the browser.
+-->
+</body>
+</html>
