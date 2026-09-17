@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const app = require('./backend/app');
 const { port, adminEmail } = require('./backend/config');
 
