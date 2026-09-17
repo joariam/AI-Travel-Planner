@@ -29,7 +29,13 @@ router.get('/auth/google/callback', async (req, res, next) => {
       method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({ code, client_id: googleClientId, client_secret: googleClientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' })
     });
-    if (!tokenResponse.ok) return res.status(502).send('Google sign-in token exchange failed.');
+    if (!tokenResponse.ok) {
+      const tokenError = await tokenResponse.json().catch(() => ({}));
+      const errorCode = String(tokenError.error || 'unknown_error');
+      const errorDescription = String(tokenError.error_description || 'No details provided by Google.');
+      console.error(`Google token exchange failed: ${errorCode} - ${errorDescription}`);
+      return res.status(502).send(`Google sign-in token exchange failed: ${errorDescription}`);
+    }
     const { access_token: accessToken } = await tokenResponse.json();
     const profileResponse = await fetch('https://openidconnect.googleapis.com/v1/userinfo', { headers: { Authorization: `Bearer ${accessToken}` } });
     if (!profileResponse.ok) return res.status(502).send('Google profile lookup failed.');
