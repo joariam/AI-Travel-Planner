@@ -752,7 +752,7 @@ h1, h2, h3, h4, button, .main-btn, .accordion-toggle,
 
 /* ---------- 1. TOP BAR: switch left, auth right ---------- */
 .top-bar{
-    position:relative;
+    position:relative; z-index:5 !important;
     display:flex; align-items:center; justify-content:space-between;
     gap:10px; margin-bottom:20px;
 }
@@ -3871,6 +3871,24 @@ async function bootPlanner() {
         document.getElementById('generateBtn').title = 'Disabled in admin preview mode';
         document.getElementById('logout-btn').style.display = 'none';
         return;
+    }
+    try {
+        const response = await fetch('/api/user-me', { credentials: 'same-origin' });
+        if (response.ok) {
+            const user = await response.json();
+            auth.currentUser = {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.name,
+                photoURL: user.photoURL || ''
+            };
+            localStorage.setItem('local_user', JSON.stringify(auth.currentUser));
+        } else if (response.status === 401) {
+            auth.currentUser = null;
+            localStorage.removeItem('local_user');
+        }
+    } catch (error) {
+        console.error('Unable to restore the user session.', error);
     }
     if (auth.currentUser) { showAuthenticatedApp(auth.currentUser); } else { showGuestHeader(); }
     maybeRunPlannerTour();
